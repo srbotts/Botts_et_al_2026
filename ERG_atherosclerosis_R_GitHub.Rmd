@@ -1,7 +1,7 @@
 ---
 title: "ERG_atherosclerosis_R_GitHub"
 author: "Steven Botts, Howe and Fish Labs"
-date: "2025-08-15"
+date: "2026-06-11"
 output: html_document
     toc: yes
 ---
@@ -9828,7 +9828,7 @@ p1
 dev.off()
 ```
 
-### Clint Miller collab
+### DisGeNET encrichment and GWAS analysis
 
 ```{r}
 ### enrichR DisGeNET
@@ -11268,259 +11268,368 @@ alsaigh_EC_plot_feature_EndMT.grid
 dev.off()
 ```
 
-### Augur
+### ERG recovery - RNA-seq analysis + correlation plot
 
 ```{r}
-Aorta.harmony.augur.Sample_ID <- calculate_auc(Aorta.harmony.join, cell_type_col = "harmony_clusters", label_col = "Sample_ID", n_threads = 10)
-AUC.Sample_ID <- Aorta.harmony.augur.Sample_ID$AUC
-Aorta.harmony.augur.Genotype <- calculate_auc(Aorta.harmony.join, cell_type_col = "harmony_clusters", label_col = "Genotype", n_threads = 10)
-AUC.Genotype <- Aorta.harmony.augur.Genotype$AUC
-Aorta.harmony.augur.Week <- calculate_auc(Aorta.harmony.join, cell_type_col = "harmony_clusters", label_col = "Week", n_threads = 10)
-AUC.Week <- Aorta.harmony.augur.Week$AUC
+### RNA-seq analysis
+KO.reads.table <- read.csv("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/salmon_counts_matrix_recovery.csv", row.names=1)
+metadata.table <- read.csv("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/Growout_RNA_metadata_deseq_format.csv", row.names=1)
 
-Aorta.subset.wk4 <- subset(Aorta.harmony.join, subset = Sample_ID %in% c("SRB_01", "SRB_02"))
-Aorta.harmony.augur.Genotype.wk4 <- calculate_auc(Aorta.subset.wk4, cell_type_col = "harmony_clusters", label_col = "Genotype", n_threads = 10)
-AUC.Genotype.wk4 <- Aorta.harmony.augur.Genotype.wk4$AUC
-Aorta.subset.wk12 <- subset(Aorta.harmony.join, subset = Sample_ID %in% c("SRB_03", "SRB_04"))
-Aorta.harmony.augur.Genotype.wk12 <- calculate_auc(Aorta.subset.wk12, cell_type_col = "harmony_clusters", label_col = "Genotype", n_threads = 10)
-AUC.Genotype.wk12 <- Aorta.harmony.augur.Genotype.wk12$AUC
+dds <- DESeqDataSetFromMatrix(countData = round(KO.reads.table),
+                               colData = metadata.table,
+                               design = ~ Group)
 
-Aorta.subset.Ctrl <- subset(Aorta.harmony.join, subset = Sample_ID %in% c("SRB_01", "SRB_03"))
-Aorta.harmony.augur.Week.Ctrl <- calculate_auc(Aorta.subset.Ctrl, cell_type_col = "harmony_clusters", label_col = "Week", n_threads = 10)
-AUC.Week.Ctrl <- Aorta.harmony.augur.Week.Ctrl$AUC
-Aorta.subset.KO <- subset(Aorta.harmony.join, subset = Sample_ID %in% c("SRB_02", "SRB_04"))
-Aorta.harmony.augur.Week.KO <- calculate_auc(Aorta.subset.KO, cell_type_col = "harmony_clusters", label_col = "Week", n_threads = 10)
-AUC.Week.KO <- Aorta.harmony.augur.Week.KO$AUC
+smallestGroupSize <- 4
+keep <- rowSums(counts(dds) >= 10) >= smallestGroupSize
+dds_min <- dds[keep,]
+
+dds_min$Group <- relevel(dds_min$Group, "Ctrl.72h")
+
+dds_min <- DESeq(dds_min)
+
+SRB_DESeq2_ERG_Ctrl.72h <- results (dds_min, contrast=c("Group","ERG.72h","Ctrl.72h"))
+SRB_DESeq2_ERG_Ctrl.D3 <- results (dds_min, contrast=c("Group","ERG.D3","Ctrl.D3"))
+SRB_DESeq2_ERG_Ctrl.D5 <- results (dds_min, contrast=c("Group","ERG.D5","Ctrl.D5"))
+SRB_DESeq2_ERG_Ctrl.D7 <- results (dds_min, contrast=c("Group","ERG.D7","Ctrl.D7"))
+
+SRB_DESeq2_ERG_Ctrl.72h.table <- as.data.frame(SRB_DESeq2_ERG_Ctrl.72h)
+SRB_DESeq2_ERG_Ctrl.D3.table <- as.data.frame(SRB_DESeq2_ERG_Ctrl.D3)
+SRB_DESeq2_ERG_Ctrl.D5.table <- as.data.frame(SRB_DESeq2_ERG_Ctrl.D5)
+SRB_DESeq2_ERG_Ctrl.D7.table <- as.data.frame(SRB_DESeq2_ERG_Ctrl.D7)
+write.csv(as.data.frame(SRB_DESeq2_ERG_Ctrl.72h), file="/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/SRB_DESeq2_ERG_Ctrl_72h_comp.csv")
+write.csv(as.data.frame(SRB_DESeq2_ERG_Ctrl.D3), file="/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/SRB_DESeq2_ERG_Ctrl_D3_comp.csv")
+write.csv(as.data.frame(SRB_DESeq2_ERG_Ctrl.D5), file="/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/SRB_DESeq2_ERG_Ctrl_D5_comp.csv")
+write.csv(as.data.frame(SRB_DESeq2_ERG_Ctrl.D7), file="/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/SRB_DESeq2_ERG_Ctrl_D7_comp.csv")
+
+extract_prefixed_cols <- function(df, prefix) {
+  out <- df[, c("log2FoldChange", "pvalue", "padj"), drop = FALSE]
+  colnames(out) <- paste0(prefix, colnames(out))
+  out
+}
+res_72h <- extract_prefixed_cols(SRB_DESeq2_ERG_Ctrl.72h.table, "72h_")
+res_D3  <- extract_prefixed_cols(SRB_DESeq2_ERG_Ctrl.D3.table,  "D3_")
+res_D5  <- extract_prefixed_cols(SRB_DESeq2_ERG_Ctrl.D5.table,  "D5_")
+res_D7  <- extract_prefixed_cols(SRB_DESeq2_ERG_Ctrl.D7.table,  "D7_")
+common_genes <- Reduce(
+  intersect,
+  list(
+    rownames(res_72h),
+    rownames(res_D3),
+    rownames(res_D5),
+    rownames(res_D7)
+  )
+)
+combined_table <- cbind(
+  res_72h[common_genes, ],
+  res_D3[common_genes, ],
+  res_D5[common_genes, ],
+  res_D7[common_genes, ]
+)
+write.csv(combined_table, file="/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/SRB_DESeq2_ERG_Ctrl_all_comp.csv")
+
+dds_min_counts <- counts(dds_min, normalized=TRUE)
+write.csv(as.data.frame(dds_min_counts), file="/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/SRB_ERG_KD_merged_count_table_norm.csv")
 
 
-lolli1 <- ggplot(AUC.Sample_ID, aes(x = fct_reorder(cell_type, auc), y = auc, color = cell_type)) +
-  geom_hline(yintercept = 0.9, linetype = "dashed", color = "gray40") +
-  geom_hline(yintercept = 0.8, linetype = "dashed", color = "gray40") +
-  geom_segment(aes(xend = fct_reorder(cell_type, auc), yend = auc), 
-               y = 0, size = 1.5, show.legend = FALSE) +
-  geom_point(size = 4, show.legend = FALSE) +
-  scale_color_manual(values = c(
-    "SMC 1" = "#F8766D", "SMC 2" = "#E88526", "EC 2" = "#00ADFA", 
-    "EC 3" = "#AE87FF", "SMC 3" = "#93AA00", "SMC 5" = "#F564E3", 
-    "Macrophage 3" = "#D39200", "EC 1" = "#00BF74", "Fibroblast 2" = "#619CFF", 
-    "SMC 4" = "#00BFC4", "Fibroblast 1" = "#FF61C3", "Macrophage 1" = "#DB72FB", 
-    "T cell 2" = "#00B9E3", "T cell 1" = "#B79F00", "Macrophage 2" = "#00BA38", 
-    "B cell" = "#5EB300", "Prolif. cell" = "#00C19F", "Neutrophil" = "#FF699C"
-  )) +
-  scale_y_continuous(limits = c(0.5, 1)) +
-  labs(title = "Sample_ID", x = NULL, y = "AUC") +
-  coord_flip() +
-  force_panelsizes(rows = unit(4, "in"), cols = unit(2, "in"))
-lolli2 <- lolli1 + theme(plot.title = element_text(face = "plain", size=15),
-  axis.title.x = element_text(face = "plain", size = 15, margin = margin(t = 10)),
-  axis.text = element_text(size=15),
-  axis.ticks = element_line(size=0.75),  
-  panel.grid.major.x = element_blank(),
-  panel.grid.major.y = element_blank(),
-  panel.grid.minor.x = element_blank(),
-  panel.grid.minor.y = element_blank())
-lolli2
-pdf("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/Augur/lollipop_SampleID.pdf", width = 5, height = 5)
-lolli2
+### Harmony_subset_plot_correlation_KO.mousevshuman
+### Convert mouse ERG KO wk 12 data to human symbols
+harmony.wk12.KOvsCtrl.markers <- read.csv("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/markers/Harmony_subset_wk12.KOvsCtrl_markers.csv", row.names = 1)
+harmony.wk12.KOvsCtrl.markers.humansymbols <- harmony.wk12.KOvsCtrl.markers
+rn <- rownames(harmony.wk12.KOvsCtrl.markers.humansymbols)
+rn_new <- toupper(rn)
+rownames(harmony.wk12.KOvsCtrl.markers.humansymbols) <- rn_new
+
+SRB_DESeq2_ERG_Ctrl.all.humansymbols <- combined_table
+
+### Extract row names from input dataframes
+row.names.KO.mouse <- rownames(harmony.wk12.KOvsCtrl.markers.humansymbols)
+row.names.KO.human <- rownames(SRB_DESeq2_ERG_Ctrl.all.humansymbols)
+common.row.names <- intersect(row.names.KO.mouse, row.names.KO.human)
+
+### Filter dataframes based on common row names
+df.mouse <- harmony.wk12.KOvsCtrl.markers.humansymbols[common.row.names, c("avg_log2FC","p_val_adj"), drop = FALSE]
+df.human <- SRB_DESeq2_ERG_Ctrl.all.humansymbols[common.row.names, c("72h_log2FoldChange","72h_padj"), drop = FALSE]
+
+### Create new dataframe for correlation
+harmony.KO.mousevshuman.corr.table <- data.frame(
+  FC.mouse = df.mouse$avg_log2FC,
+  FDR.mouse = df.mouse$p_val_adj,
+  FC.human = df.human$"72h_log2FoldChange",
+  FDR.human = df.human$"72h_padj",
+  row.names = common.row.names
+)
+harmony.KO.mousevshuman.corr.table$FDR.mouse[harmony.KO.mousevshuman.corr.table$FDR.mouse < 1e-300] <- 1e-300
+harmony.KO.mousevshuman.corr.table$score.mouse <- sign(harmony.KO.mousevshuman.corr.table$FC.mouse) * -log10(harmony.KO.mousevshuman.corr.table$FDR.mouse)
+harmony.KO.mousevshuman.corr.table$score.human <- sign(harmony.KO.mousevshuman.corr.table$FC.human) * -log10(harmony.KO.mousevshuman.corr.table$FDR.human)
+harmony.KO.mousevshuman.corr.table <- harmony.KO.mousevshuman.corr.table[, c("FC.mouse", "FDR.mouse", "score.mouse",
+             "FC.human", "FDR.human", "score.human")]
+harmony.KO.mousevshuman.corr.table <- harmony.KO.mousevshuman.corr.table %>%
+  mutate(sig = case_when(
+    score.mouse < log10(0.05) & score.human < log10(0.05) & row.names(.) %in% EC.markers.human ~ "down",
+    score.mouse > -log10(0.05) & score.human > -log10(0.05) & row.names(.) %in% EndMT.markers.human ~ "up",
+    TRUE ~ "no"
+  ))
+harmony.KO.mousevshuman.corr.table$label <- NA
+EC.corr.list <- c("BMX", "CALCRL", "CCM2L", "EPAS1", "FAM107A", "JCAD", "PECAM1", "PLEKHG1", "TIE1", "VWF")
+EndMT.corr.list <- c("CD44", "COL5A2", "COL8A1", "FBLN5", "FBN1", "FN1", "MMP2", "TGFB2", "TGFBI", "VCAN")
+harmony.KO.mousevshuman.corr.table <- harmony.KO.mousevshuman.corr.table %>%
+  mutate(label = ifelse((row.names(.) %in% EC.corr.list) | (row.names(.) %in% EndMT.corr.list), row.names(harmony.KO.mousevshuman.corr.table), NA))
+harmony.KO.mousevshuman.corr.table$sig <- factor(harmony.KO.mousevshuman.corr.table$sig, levels = c("no", "down", "up"))
+harmony.KO.mousevshuman.corr.table <- harmony.KO.mousevshuman.corr.table[order(harmony.KO.mousevshuman.corr.table$sig), ]
+write.csv(harmony.KO.mousevshuman.corr.table, "/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/markers/Harmony_subset_correlation_KO.mousevshuman.csv")
+
+### Fig 7 - Harmony_subset_plot_correlation_KO.mousevshuman
+harmony.KO.mousevshuman.correlation1 <- ggplot(data = harmony.KO.mousevshuman.corr.table, aes(x = score.mouse, y = score.human, label = label)) +
+    geom_hline(yintercept = 0, col = "black") +
+    geom_vline(xintercept = 0, col = "black") + 
+    geom_smooth(method = lm, formula = y ~ x, aes(group=1)) +
+    rasterize(geom_point(data = harmony.KO.mousevshuman.corr.table[harmony.KO.mousevshuman.corr.table$sig == "no", ], aes(color = "No"), size = 2), dpi=200) +
+    geom_point(data = harmony.KO.mousevshuman.corr.table[harmony.KO.mousevshuman.corr.table$sig == "up", ], aes(color = "Mes"), size = 2) +
+    geom_point(data = harmony.KO.mousevshuman.corr.table[harmony.KO.mousevshuman.corr.table$sig == "down", ], aes(color = "EC"), size = 2) +
+    geom_label_repel(data = harmony.KO.mousevshuman.corr.table[harmony.KO.mousevshuman.corr.table$sig == "down", ], xlim = c(0, -300), ylim = c(0, -120), size = 5.6667, max.overlaps = Inf) +
+    geom_label_repel(data = harmony.KO.mousevshuman.corr.table[harmony.KO.mousevshuman.corr.table$sig == "up", ], xlim = c(0, 300), ylim = c(0, 120), size = 5.6667, max.overlaps = Inf) +
+    NoLegend() +
+    coord_cartesian(xlim = c(-300, 300), ylim = c(-120, 120)) +
+    scale_color_manual(values = c("deepskyblue3", "firebrick3", "grey"),
+        labels = c("EC", "Mes", "No")) +
+    stat_cor(aes(group = 1, label = paste(after_stat(rr.label), after_stat(p.label), sep = "~`,`~"))) +
+    labs(x = "Mouse ERG KO enrichment score", y = "TeloHAEC ERG KD enrichment score",
+        title = "Mouse atherosclerosis vs. in vitro ERG siRNA") 
+harmony.KO.mousevshuman.correlation2 <- harmony.KO.mousevshuman.correlation1 + theme(plot.title = element_text(size=20, face = "plain", hjust = 0.5),
+        axis.text = element_text(size=20),
+        axis.title.x = element_text(face = "plain", size=20),
+        axis.title.y = element_text(face = "plain", size=20),
+        panel.border = element_rect(size=2, colour = "black"),
+        axis.ticks = element_line(size=1))
+harmony.KO.mousevshuman.correlation2
+pdf("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/pub/fig 7 + supp/Harmony_subset_plot_correlation_KO.mousevshuman.pdf", width = 6.8, height = 6.85)
+harmony.KO.mousevshuman.correlation2
 dev.off()
 
-lolli3 <- ggplot(AUC.Genotype, aes(x = fct_reorder(cell_type, auc), y = auc, color = cell_type)) +
-  geom_hline(yintercept = 0.9, linetype = "dashed", color = "gray40") +
-  geom_hline(yintercept = 0.8, linetype = "dashed", color = "gray40") +
-  geom_segment(aes(xend = fct_reorder(cell_type, auc), yend = auc), 
-               y = 0, size = 1.5, show.legend = FALSE) +
-  geom_point(size = 4, show.legend = FALSE) +
-  scale_color_manual(values = c(
-    "SMC 1" = "#F8766D", "SMC 2" = "#E88526", "EC 2" = "#00ADFA", 
-    "EC 3" = "#AE87FF", "SMC 3" = "#93AA00", "SMC 5" = "#F564E3", 
-    "Macrophage 3" = "#D39200", "EC 1" = "#00BF74", "Fibroblast 2" = "#619CFF", 
-    "SMC 4" = "#00BFC4", "Fibroblast 1" = "#FF61C3", "Macrophage 1" = "#DB72FB", 
-    "T cell 2" = "#00B9E3", "T cell 1" = "#B79F00", "Macrophage 2" = "#00BA38", 
-    "B cell" = "#5EB300", "Prolif. cell" = "#00C19F", "Neutrophil" = "#FF699C"
-  )) +
-  scale_y_continuous(limits = c(0.4, 1), breaks = seq(0.4, 1, by = 0.2)) +
-  labs(title = "Genotype", x = NULL, y = "AUC") +
-  coord_flip() +
-  force_panelsizes(rows = unit(4, "in"), cols = unit(1, "in"))
-lolli4 <- lolli3 + theme(plot.title = element_text(face = "plain", size=15),
-  axis.title.x = element_text(face = "plain", size = 15, margin = margin(t = 10)),
-  axis.text = element_text(size=15),
-  axis.text.x = element_text(angle = 45, hjust = 1),
-  axis.ticks = element_line(size=0.75),  
-  panel.grid.major.x = element_blank(),
-  panel.grid.major.y = element_blank(),
-  panel.grid.minor.x = element_blank(),
-  panel.grid.minor.y = element_blank(),
-  panel.border = element_rect(size=1, colour = "black"))
-lolli4
-pdf("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/Augur/lollipop_Genotype.pdf", width = 5, height = 5)
-lolli4
-dev.off()
 
-lolli5 <- ggplot(AUC.Week, aes(x = fct_reorder(cell_type, auc), y = auc, color = cell_type)) +
-  geom_hline(yintercept = 0.9, linetype = "dashed", color = "gray40") +
-  geom_hline(yintercept = 0.8, linetype = "dashed", color = "gray40") +
-  geom_segment(aes(xend = fct_reorder(cell_type, auc), yend = auc), 
-               y = 0, size = 1.5, show.legend = FALSE) +
-  geom_point(size = 4, show.legend = FALSE) +
-  scale_color_manual(values = c(
-    "SMC 1" = "#F8766D", "SMC 2" = "#E88526", "EC 2" = "#00ADFA", 
-    "EC 3" = "#AE87FF", "SMC 3" = "#93AA00", "SMC 5" = "#F564E3", 
-    "Macrophage 3" = "#D39200", "EC 1" = "#00BF74", "Fibroblast 2" = "#619CFF", 
-    "SMC 4" = "#00BFC4", "Fibroblast 1" = "#FF61C3", "Macrophage 1" = "#DB72FB", 
-    "T cell 2" = "#00B9E3", "T cell 1" = "#B79F00", "Macrophage 2" = "#00BA38", 
-    "B cell" = "#5EB300", "Prolif. cell" = "#00C19F", "Neutrophil" = "#FF699C"
-  )) +
-  scale_y_continuous(limits = c(0.4, 1), breaks = seq(0.4, 1, by = 0.2)) +
-  labs(title = "Week", x = NULL, y = "AUC") +
-  coord_flip() +
-  force_panelsizes(rows = unit(4, "in"), cols = unit(1, "in"))
-lolli6 <- lolli5 + theme(plot.title = element_text(face = "plain", size=15),
-  axis.title.x = element_text(face = "plain", size = 15, margin = margin(t = 10)),
-  axis.text = element_text(size=15),
-  axis.text.x = element_text(angle = 45, hjust = 1),
-  axis.ticks = element_line(size=0.75),  
-  panel.grid.major.x = element_blank(),
-  panel.grid.major.y = element_blank(),
-  panel.grid.minor.x = element_blank(),
-  panel.grid.minor.y = element_blank(),
-  panel.border = element_rect(size=1, colour = "black"))
-lolli6
-pdf("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/Augur/lollipop_Week.pdf", width = 5, height = 5)
-lolli6
-dev.off()
+### UCell composite score analysis
+concordant.genes <- rownames(harmony.KO.mousevshuman.corr.table)[
+  (
+    harmony.KO.mousevshuman.corr.table$score.mouse < log10(0.05) &
+    harmony.KO.mousevshuman.corr.table$score.human < log10(0.05)
+  ) |
+  (
+    harmony.KO.mousevshuman.corr.table$score.mouse > -log10(0.05) &
+    harmony.KO.mousevshuman.corr.table$score.human > -log10(0.05)
+  )
+]
+EC.markers.sig <- intersect(concordant.genes, EC.markers.human)
+EndMT.markers.sig <- intersect(concordant.genes, EndMT.markers.human)
 
-lolli7 <- ggplot(AUC.Genotype.wk4, aes(x = fct_reorder(cell_type, auc), y = auc, color = cell_type)) +
-  geom_hline(yintercept = 0.9, linetype = "dashed", color = "gray40") +
-  geom_hline(yintercept = 0.8, linetype = "dashed", color = "gray40") +
-  geom_segment(aes(xend = fct_reorder(cell_type, auc), yend = auc), 
-               y = 0, size = 1.5, show.legend = FALSE) +
-  geom_point(size = 4, show.legend = FALSE) +
-  scale_color_manual(values = c(
-    "SMC 1" = "#F8766D", "SMC 2" = "#E88526", "EC 2" = "#00ADFA", 
-    "EC 3" = "#AE87FF", "SMC 3" = "#93AA00", "SMC 5" = "#F564E3", 
-    "Macrophage 3" = "#D39200", "EC 1" = "#00BF74", "Fibroblast 2" = "#619CFF", 
-    "SMC 4" = "#00BFC4", "Fibroblast 1" = "#FF61C3", "Macrophage 1" = "#DB72FB", 
-    "T cell 2" = "#00B9E3", "T cell 1" = "#B79F00", "Macrophage 2" = "#00BA38", 
-    "B cell" = "#5EB300", "Prolif. cell" = "#00C19F", "Neutrophil" = "#FF699C"
-  )) +
-  scale_y_continuous(limits = c(0.5, 1)) +
-  labs(title = "Wk 4: Genotype", x = NULL, y = "AUC") +
-  coord_flip() +
-  force_panelsizes(rows = unit(4, "in"), cols = unit(2, "in"))
-lolli8 <- lolli7 + theme(plot.title = element_text(face = "plain", size=15),
-  axis.title.x = element_text(face = "plain", size = 15, margin = margin(t = 10)),
-  axis.text = element_text(size=15),
-  axis.ticks = element_line(size=0.75),  
-  panel.grid.major.x = element_blank(),
-  panel.grid.major.y = element_blank(),
-  panel.grid.minor.x = element_blank(),
-  panel.grid.minor.y = element_blank())
-lolli8
-pdf("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/Augur/lollipop_Genotype.wk4.pdf", width = 5, height = 5)
-lolli8
-dev.off()
+dds.UCell <- counts(dds_min, normalized=FALSE)
+gene.sets <- list(EC.markers.sig, EndMT.markers.sig)
+UCell.scores <- ScoreSignatures_UCell(dds.UCell, features = gene.sets)
+UCell.scores <- as.data.frame(UCell.scores)
+UCell.scores <- UCell.scores %>%
+  rename(
+    EC.markers.sig.UCell = signature_1_UCell,
+    EndMT.markers.sig.UCell = signature_2_UCell
+  )
 
-lolli9 <- ggplot(AUC.Genotype.wk12, aes(x = fct_reorder(cell_type, auc), y = auc, color = cell_type)) +
-  geom_hline(yintercept = 0.9, linetype = "dashed", color = "gray40") +
-  geom_hline(yintercept = 0.8, linetype = "dashed", color = "gray40") +
-  geom_segment(aes(xend = fct_reorder(cell_type, auc), yend = auc), 
-               y = 0, size = 1.5, show.legend = FALSE) +
-  geom_point(size = 4, show.legend = FALSE) +
-  scale_color_manual(values = c(
-    "SMC 1" = "#F8766D", "SMC 2" = "#E88526", "EC 2" = "#00ADFA", 
-    "EC 3" = "#AE87FF", "SMC 3" = "#93AA00", "SMC 5" = "#F564E3", 
-    "Macrophage 3" = "#D39200", "EC 1" = "#00BF74", "Fibroblast 2" = "#619CFF", 
-    "SMC 4" = "#00BFC4", "Fibroblast 1" = "#FF61C3", "Macrophage 1" = "#DB72FB", 
-    "T cell 2" = "#00B9E3", "T cell 1" = "#B79F00", "Macrophage 2" = "#00BA38", 
-    "B cell" = "#5EB300", "Prolif. cell" = "#00C19F", "Neutrophil" = "#FF699C"
-  )) +
-  scale_y_continuous(limits = c(0.5, 1)) +
-  labs(title = "Wk 12: Genotype", x = NULL, y = "AUC") +
-  coord_flip() +
-  force_panelsizes(rows = unit(4, "in"), cols = unit(2, "in"))
-lolli10 <- lolli9 + theme(plot.title = element_text(face = "plain", size=15),
-  axis.title.x = element_text(face = "plain", size = 15, margin = margin(t = 10)),
-  axis.text = element_text(size=15),
-  axis.ticks = element_line(size=0.75),  
-  panel.grid.major.x = element_blank(),
-  panel.grid.major.y = element_blank(),
-  panel.grid.minor.x = element_blank(),
-  panel.grid.minor.y = element_blank())
-lolli10
-pdf("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/Augur/lollipop_Genotype.wk12.pdf", width = 5, height = 5)
-lolli10
-dev.off()
+UCell.scores <- UCell.scores %>%
+  mutate(Sample = rownames(UCell.scores)) %>%
+  dplyr::select(Sample, everything())
 
-lolli11 <- ggplot(AUC.Week.Ctrl, aes(x = fct_reorder(cell_type, auc), y = auc, color = cell_type)) +
-  geom_hline(yintercept = 0.9, linetype = "dashed", color = "gray40") +
-  geom_hline(yintercept = 0.8, linetype = "dashed", color = "gray40") +
-  geom_segment(aes(xend = fct_reorder(cell_type, auc), yend = auc), 
-               y = 0, size = 1.5, show.legend = FALSE) +
-  geom_point(size = 4, show.legend = FALSE) +
-  scale_color_manual(values = c(
-    "SMC 1" = "#F8766D", "SMC 2" = "#E88526", "EC 2" = "#00ADFA", 
-    "EC 3" = "#AE87FF", "SMC 3" = "#93AA00", "SMC 5" = "#F564E3", 
-    "Macrophage 3" = "#D39200", "EC 1" = "#00BF74", "Fibroblast 2" = "#619CFF", 
-    "SMC 4" = "#00BFC4", "Fibroblast 1" = "#FF61C3", "Macrophage 1" = "#DB72FB", 
-    "T cell 2" = "#00B9E3", "T cell 1" = "#B79F00", "Macrophage 2" = "#00BA38", 
-    "B cell" = "#5EB300", "Prolif. cell" = "#00C19F", "Neutrophil" = "#FF699C"
-  )) +
-  scale_y_continuous(limits = c(0.5, 1)) +
-  labs(title = "Ctrl: Week", x = NULL, y = "AUC") +
-  coord_flip() +
-  force_panelsizes(rows = unit(4, "in"), cols = unit(2, "in"))
-lolli12 <- lolli11 + theme(plot.title = element_text(face = "plain", size=15),
-  axis.title.x = element_text(face = "plain", size = 15, margin = margin(t = 10)),
-  axis.text = element_text(size=15),
-  axis.ticks = element_line(size=0.75),  
-  panel.grid.major.x = element_blank(),
-  panel.grid.major.y = element_blank(),
-  panel.grid.minor.x = element_blank(),
-  panel.grid.minor.y = element_blank())
-lolli12
-pdf("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/Augur/lollipop_Week.Ctrl.pdf", width = 5, height = 5)
-lolli12
-dev.off()
+group_lookup <- data.frame(Sample = rownames(metadata.table), Group = metadata.table$Group)
+UCell.scores <- merge(UCell.scores, group_lookup, by.x = "row.names", by.y = "Sample", all.x = TRUE)
+rownames(UCell.scores) <- UCell.scores$Row.names
+UCell.scores$Row.names <- NULL
+group_order <- c(
+  "Ctrl.72h", "ERG.72h",
+  "Ctrl.D3", "ERG.D3",
+  "Ctrl.D5", "ERG.D5",
+  "Ctrl.D7", "ERG.D7"
+)
+UCell.scores$Group <- factor(UCell.scores$Group, levels = group_order)
+UCell.scores <- UCell.scores %>%
+  dplyr::arrange(Group)
+write.csv(UCell.scores, "/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/UCell.scores.csv")
 
-lolli13 <- ggplot(AUC.Week.KO, aes(x = fct_reorder(cell_type, auc), y = auc, color = cell_type)) +
-  geom_hline(yintercept = 0.9, linetype = "dashed", color = "gray40") +
-  geom_hline(yintercept = 0.8, linetype = "dashed", color = "gray40") +
-  geom_segment(aes(xend = fct_reorder(cell_type, auc), yend = auc), 
-               y = 0, size = 1.5, show.legend = FALSE) +
-  geom_point(size = 4, show.legend = FALSE) +
-  scale_color_manual(values = c(
-    "SMC 1" = "#F8766D", "SMC 2" = "#E88526", "EC 2" = "#00ADFA", 
-    "EC 3" = "#AE87FF", "SMC 3" = "#93AA00", "SMC 5" = "#F564E3", 
-    "Macrophage 3" = "#D39200", "EC 1" = "#00BF74", "Fibroblast 2" = "#619CFF", 
-    "SMC 4" = "#00BFC4", "Fibroblast 1" = "#FF61C3", "Macrophage 1" = "#DB72FB", 
-    "T cell 2" = "#00B9E3", "T cell 1" = "#B79F00", "Macrophage 2" = "#00BA38", 
-    "B cell" = "#5EB300", "Prolif. cell" = "#00C19F", "Neutrophil" = "#FF699C"
-  )) +
-  scale_y_continuous(limits = c(0.5, 1)) +
-  labs(title = "KO: Week", x = NULL, y = "AUC") +
-  coord_flip() +
-  force_panelsizes(rows = unit(4, "in"), cols = unit(2, "in"))
-lolli14 <- lolli13 + theme(plot.title = element_text(face = "plain", size=15),
-  axis.title.x = element_text(face = "plain", size = 15, margin = margin(t = 10)),
-  axis.text = element_text(size=15),
-  axis.ticks = element_line(size=0.75),  
-  panel.grid.major.x = element_blank(),
-  panel.grid.major.y = element_blank(),
-  panel.grid.minor.x = element_blank(),
-  panel.grid.minor.y = element_blank())
-lolli14
-pdf("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/Augur/lollipop_Week.KO.pdf", width = 5, height = 5)
-lolli14
-dev.off()
+UCell.scores %>% 
+  group_by(Group) %>%
+  get_summary_stats(EC.markers.sig.UCell, type = "common")
+EC.kruskal <- UCell.scores %>% kruskal_test(EC.markers.sig.UCell ~ Group)
+EC.kruskal
+EC.kruskal.effsize <- UCell.scores %>% kruskal_effsize(EC.markers.sig.UCell ~ Group)
+EC.kruskal.effsize
+EC.kruskal.Dunn <- UCell.scores %>% 
+  dunn_test(EC.markers.sig.UCell ~ Group, p.adjust.method = "none") 
+EC.kruskal.Dunn
+write.csv(EC.kruskal.Dunn, "/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/EC_kruskal_dunn.csv", row.names = FALSE)
 
-(plot_grid(lolli2, lolli4, lolli6, lolli8, lolli10, lolli12, lolli14, nrow = 2))
-pdf("/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/Augur/lollipop_layout.pdf", width = 20, height = 11)
-(plot_grid(lolli2, lolli4, lolli6, lolli8, lolli10, lolli12, lolli14, nrow = 2))
-dev.off()
+UCell.scores %>% 
+  group_by(Group) %>%
+  get_summary_stats(EndMT.markers.sig.UCell, type = "common")
+EndMT.kruskal <- UCell.scores %>% kruskal_test(EndMT.markers.sig.UCell ~ Group)
+EndMT.kruskal
+EndMT.kruskal.effsize <- UCell.scores %>% kruskal_effsize(EndMT.markers.sig.UCell ~ Group)
+EndMT.kruskal.effsize
+EndMT.kruskal.Dunn <- UCell.scores %>% 
+  dunn_test(EndMT.markers.sig.UCell ~ Group, p.adjust.method = "none") 
+EndMT.kruskal.Dunn
+write.csv(EndMT.kruskal.Dunn, "/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/EndMT_kruskal_dunn.csv", row.names = FALSE)
+
 ```
 
-### Testing alternative MT thresholds (25%, 40%, 55%)
+### ERG recovery - ATAC-seq analysis
+
+```{r}
+### TOBIAS analysis
+### Summed Log2FC analysis of the TOBIAS and differentially accessibile regions data
+setwd("/home/kellis/TOBIAS/TOBIAS_tmp_ERG_run/recovery_2025/BINDetect_output_erg_motifs/")
+db <- "org.Hs.eg.db" 
+txd <- TxDb.Hsapiens.UCSC.hg38.knownGene  
+
+annotate_tf_txt <- function(TF_binding_path){
+  db <- "org.Hs.eg.db" 
+  txd <- TxDb.Hsapiens.UCSC.hg38.knownGene  
+  colnames(jun_data)
+  jun_data <- vroom::vroom(TF_binding_path)
+  jun_data_red <- jun_data %>% dplyr::select(TFBS_chr,TFBS_start,TFBS_end,Ctrl_72hr_ergsiRNA_72hr_log2fc,Ctrl_3d_ergSiRNA_3d_log2fc,Ctrl_5d_ergSiRNA_5d_log2fc,Ctrl_7d_ergSiRNA_7d_log2fc)
+  jun_grange <- makeGRangesFromDataFrame(jun_data_red,
+                                         keep.extra.columns=T)
+  dbReport_anno <- annotatePeak(jun_grange, tssRegion=c(-3000, 3000),
+                                     TxDb=txd, annoDb= db)
+  dbReport_anno <- data.frame(dbReport_anno)
+  colnames(jun_data_red)
+  dbReport_summed <- dbReport_anno |> 
+    group_by(across(SYMBOL)) |>
+    summarise(Ctrl_72hr_ergsiRNA_72hr_log2fc = sum(Ctrl_72hr_ergsiRNA_72hr_log2fc),
+              Ctrl_3d_ergSiRNA_3d_log2fc = sum(Ctrl_3d_ergSiRNA_3d_log2fc),
+              Ctrl_5d_ergSiRNA_5d_log2fc = sum(Ctrl_5d_ergSiRNA_5d_log2fc),
+              Ctrl_7d_ergSiRNA_7d_log2fc = sum(Ctrl_7d_ergSiRNA_7d_log2fc))|>
+    ungroup()  
+  #df1 = dbReport_promoters[order(dbReport_promoters[,'SYMBOL'],-dbReport_promoters[,'Ctrl_72hr_KO_72hr_log2fc']),]
+  #df = df1[!duplicated(df1$SYMBOL),]
+  return(dbReport_summed)
+}
+list <- read.table("~/Downloads/genes.of.interest(1).csv")
+colnames(list) <- "SYMBOL"
+Jun <- annotate_tf_txt("~/TOBIAS/TOBIAS_tmp_ERG_run/recovery_2025/BINDetect_output_erg_motifs/Jun_MA0489.2/Jun_MA0489.2_overview.txt")
+Jun_red <- inner_join(Jun,list, by = "SYMBOL")
+
+colnames(Fosl1)[c(2:6)] <- paste0("FOSL1_",colnames(Fosl1)[c(2:6)]) 
+Jun <- annotate_tf_txt("~/TOBIAS/TOBIAS_tmp_ERG_run/timecourse_2024/BINDetect_output_all_motifs/Jun_MA0489.2/Jun_MA0489.2_overview.txt")
+colnames(Jun)[c(2:6)] <- paste0("Jun_",colnames(Jun)[c(2:6)]) 
+Erg <- annotate_tf_txt("~/TOBIAS/TOBIAS_tmp_ERG_run/recovery_2025/BINDetect_output_erg_motifs/Erg_MA0474.3/Erg_MA0474.3_overview.txt")
+Erg_red <- inner_join(Erg,list, by = "SYMBOL")
+colnames(Erg)[c(2:6)] <- paste0("ERG_",colnames(Erg)[c(2:6)]) 
+Smad <- annotate_tf_txt("~/TOBIAS/TOBIAS_tmp_ERG_run/recovery_2025/BINDetect_output_erg_motifs/Smad4_MA1153.1/Smad4_MA1153.1_overview.txt")
+Smad_red <- inner_join(Smad,list, by = "SYMBOL")
+setwd("/home/kellis/Downloads/temp/TOBIAS/")
+write.csv(Smad_red, "Smad_log2fc_aggregated_target_genes.csv", row.names = F)
+write.csv(Erg_red, "Erg_log2fc_aggregated_target_genes.csv", row.names = F)
+write.csv(Jun_red, "Jun_log2fc_aggregated_target_genes.csv", row.names = F)
+
+
+### Collate HOMER outputs
+df_72hr <- read.delim(
+  "/Users/stevenbotts/Downloads/in vivo/KE/ATAC-seq/EC_down_concordant/Down_great_Treatment_72hr-erg-sirna_72hr-ctrl-sirna__EC_concordant_homer/knownResults.txt",
+  header = TRUE,
+  stringsAsFactors = FALSE
+)
+df_3d <- read.delim(
+  "/Users/stevenbotts/Downloads/in vivo/KE/ATAC-seq/EC_down_concordant/Down_great_Treatment_3d-erg-sirna_3d-ctrl-sirna__EC_concordant_homer/knownResults.txt",
+  header = TRUE,
+  stringsAsFactors = FALSE
+)
+df_5d <- read.delim(
+  "/Users/stevenbotts/Downloads/in vivo/KE/ATAC-seq/EC_down_concordant/Down_great_Treatment_5d-erg-sirna_5d-ctrl-sirna__EC_concordant_homer/knownResults.txt",
+  header = TRUE,
+  stringsAsFactors = FALSE
+)
+
+# Subset and rename columns from each dataframe
+df_72h_sub <- df_72hr[, c("Motif.Name", "Consensus", "P.value", "Log.P.value", "q.value..Benjamini.")]
+colnames(df_72h_sub) <- c(
+  "Motif.Name",
+  "Consensus",
+  "P.value_72h",
+  "Log.P.value_72h",
+  "q.value_72h"
+)
+
+df_3d_sub <- df_3d[, c("Motif.Name", "P.value", "Log.P.value", "q.value..Benjamini.")]
+colnames(df_3d_sub) <- c(
+  "Motif.Name",
+  "P.value_3d",
+  "Log.P.value_3d",
+  "q.value_3d"
+)
+
+df_5d_sub <- df_5d[, c("Motif.Name", "P.value", "Log.P.value", "q.value..Benjamini.")]
+colnames(df_5d_sub) <- c(
+  "Motif.Name",
+  "P.value_5d",
+  "Log.P.value_5d",
+  "q.value_5d"
+)
+
+# Merge sequentially by Motif.Name
+merged_df <- merge(df_72h_sub, df_3d_sub, by = "Motif.Name", all = TRUE)
+merged_df_EC <- merge(merged_df, df_5d_sub, by = "Motif.Name", all = TRUE)
+merged_df_EC$negLogP_72h <- -merged_df_EC$Log.P.value_72h
+merged_df_EC$negLogP_3d  <- -merged_df_EC$Log.P.value_3d
+merged_df_EC$negLogP_5d  <- -merged_df_EC$Log.P.value_5d
+write.csv(merged_df_EC, "/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/SRB_ERG_KD_HOMER_concordant_EC.csv")
+
+df_72hr <- read.delim(
+  "/Users/stevenbotts/Downloads/in vivo/KE/ATAC-seq/EndMT_up_concordant/Up_great_Treatment_72hr-erg-sirna_72hr-ctrl-sirna__EndMT_concordant_homer/knownResults.txt",
+  header = TRUE,
+  stringsAsFactors = FALSE
+)
+df_3d <- read.delim(
+  "/Users/stevenbotts/Downloads/in vivo/KE/ATAC-seq/EndMT_up_concordant/Up_great_Treatment_3d-erg-sirna_3d-ctrl-sirna__EndMT_concordant_homer/knownResults.txt",
+  header = TRUE,
+  stringsAsFactors = FALSE
+)
+df_5d <- read.delim(
+  "/Users/stevenbotts/Downloads/in vivo/KE/ATAC-seq/EndMT_up_concordant/Up_great_Treatment_5d-erg-sirna_5d-ctrl-sirna__EndMT_concordant_homer/knownResults.txt",
+  header = TRUE,
+  stringsAsFactors = FALSE
+)
+
+# Subset and rename columns from each dataframe
+df_72h_sub <- df_72hr[, c("Motif.Name", "Consensus", "P.value", "Log.P.value", "q.value..Benjamini.")]
+colnames(df_72h_sub) <- c(
+  "Motif.Name",
+  "Consensus",
+  "P.value_72h",
+  "Log.P.value_72h",
+  "q.value_72h"
+)
+
+df_3d_sub <- df_3d[, c("Motif.Name", "P.value", "Log.P.value", "q.value..Benjamini.")]
+colnames(df_3d_sub) <- c(
+  "Motif.Name",
+  "P.value_3d",
+  "Log.P.value_3d",
+  "q.value_3d"
+)
+
+df_5d_sub <- df_5d[, c("Motif.Name", "P.value", "Log.P.value", "q.value..Benjamini.")]
+colnames(df_5d_sub) <- c(
+  "Motif.Name",
+  "P.value_5d",
+  "Log.P.value_5d",
+  "q.value_5d"
+)
+
+# Merge sequentially by Motif.Name
+merged_df <- merge(df_72h_sub, df_3d_sub, by = "Motif.Name", all = TRUE)
+merged_df_EndMT <- merge(merged_df, df_5d_sub, by = "Motif.Name", all = TRUE)
+merged_df_EndMT$negLogP_72h <- -merged_df_EndMT$Log.P.value_72h
+merged_df_EndMT$negLogP_3d  <- -merged_df_EndMT$Log.P.value_3d
+merged_df_EndMT$negLogP_5d  <- -merged_df_EndMT$Log.P.value_5d
+write.csv(merged_df_EndMT, "/Users/stevenbotts/Library/CloudStorage/OneDrive-UniversityofToronto/PhD/ERG/ERG KO mice/ERG KO athero/PCSK9 scRNA-seq/scRNA analysis/Harmony/teloHAEC integration/SRB_ERG_KD_HOMER_concordant_EndMT.csv")
+```
+
+### Supplemental - Testing alternative MT thresholds (25%, 40%, 55%)
 
 ```{r}
 ### Fig 3 - Harmony_all_MT_thresholdplot
